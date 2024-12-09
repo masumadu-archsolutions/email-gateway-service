@@ -1,0 +1,95 @@
+# This is a basic workflow for nova project
+
+name: Build and Push to Docker Registry
+
+# Controls when the action will run.
+on:
+  # Triggers the workflow on push or pull request events but only for the develop branch
+  push:
+    branches: [ sms ]
+  pull_request:
+    branches: [ sms ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+ # This workflow contains a two jobs called "build", "docker"
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "3.10.10" ]
+        poetry-version: [ "1.4.2" ]
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      FASTAPI_CONFIG: testing
+      TEST_DB_NAME: testdb
+      TEST_DB_HOST: localhost
+      TEST_DB_PORT: 5430
+      TEST_DB_USER: postgres
+      TEST_DB_PASSWORD: postgres
+
+    # spin up docker container
+    services:
+      # Label used to access the docker container
+      postgres:
+        # Docker Hub image
+        image: postgres
+        env:
+          POSTGRES_USER: ${{ env.TEST_B_USER }}
+          POSTGRES_PASSWORD: ${{ env.TEST_DB_PASSWORD }}
+          POSTGRES_DB: ${{ env.TEST_DB_NAME }}
+        ports:
+          - 5430:5432
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: Checkout of the repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ matrix.poetry-version }}
+
+      - name: View poetry --help
+        run: poetry --help
+
+      - name: View file structure
+        run: ls -la
+
+      - name: Install dependencies
+        shell: bash
+        run: poetry install --no-root
+
+      - name: Test migration scripts
+        shell: bash
+        run: |
+          poetry run python -m alembic upgrade head
+
+      - name: Test with pytest
+        run: |
+          poetry run coverage run -m pytest -v tests
+
+      - name: Check overall coverage
+        run: |
+          poetry run coverage report
+
+      - name: Check file coverage
+        run: |
+          ./check_file_coverage.sh

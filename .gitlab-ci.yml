@@ -1,0 +1,96 @@
+stages:
+  - test
+  - build
+  - deploy
+
+test:
+  stage: test
+  image: python:3.10  # Choose the Python version you need for testing
+  services:
+    - name: postgres:latest  # Use a PostgreSQL Docker image
+
+
+  script:
+    - export PIP_DEFAULT_TIMEOUT=100
+    - pip install poetry==1.4.2
+    - poetry config virtualenvs.create false
+    - poetry install --no-root
+    - pip install git+https://$username:$token@gitlab.quantumgroupgh.com/$username/quantum-notification-auth.git
+    - poetry run python -m alembic upgrade head
+    - poetry run coverage run -m pytest -v tests
+    - poetry run coverage report
+    - ./check_test_coverage.sh
+
+  variables:
+    FASTAPI_CONFIG: testing
+    TEST_DB_NAME: testdb
+    TEST_DB_HOST: localhost
+    TEST_DB_PORT: 5432
+    TEST_DB_USER: postgres
+    TEST_DB_PASSWORD: postgres
+    POSTGRES_DB: testdb
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+    POSTGRES_HOST_AUTH_METHOD: trust
+
+build:
+  stage: build
+  image: dharmendrakariya/dind:test1  # Use an image that includes Docker for the build stage
+  services:
+    - dharmendrakariya/dind:test1
+  before_script:
+    - echo $CI_REGISTRY_PASSWORD | docker login privatedr.quantumgroupgh.com --username dk --password-stdin
+  script:
+    - export PIP_DEFAULT_TIMEOUT=100
+    - service docker start
+    - docker pull $CI_REGISTRY/quantum-notification-sms-server:$CI_COMMIT_BRANCH || true
+    - export SEMVER_VERSION=$(printf "0.2.%s" $CI_PIPELINE_ID)
+    - export BRANCH_NAME=$(echo $CI_COMMIT_REF_NAME | tr / -)
+    - export COMMIT_HASH=$(echo $CI_COMMIT_SHA | cut -c1-8)
+    - export DOCKER_TAG=${BRANCH_NAME}-${COMMIT_HASH}
+    - if [[ "$CI_COMMIT_REF_NAME" == "develop" || "$CI_COMMIT_REF_NAME" == "uat" || "$CI_COMMIT_REF_NAME" == "production" ]]; then
+        docker build --network=host --build-arg username=root --build-arg token=$quantum_notification_auth_token --cache-from $CI_REGISTRY/quantum-notification-sms-server:$CI_COMMIT_BRANCH --tag $CI_REGISTRY/quantum-notification-sms-server:$CI_COMMIT_BRANCH .;
+        docker push $CI_REGISTRY/quantum-notification-sms-server:$CI_COMMIT_BRANCH;
+      else
+        echo "Docker build skipped because this is not the 'develop' branch.";
+      fi
+
+  only:
+    - develop
+    - uat
+    - production
+
+
+deploy:
+  stage: deploy
+  image: bitnami/kubectl:latest
+  script:
+    - if [[ "$CI_COMMIT_REF_NAME" == "develop" ]]; then
+        echo "$PROD_ENT_KUBE_CONFIG" | base64 -d > kubeconfig.yml; export KUBECONFIG=$(pwd)/kubeconfig.yml; kubectl config use-context prod-enterprise-cluster; kubectl delete pod -n notification-server -l app=quantum-notification-sms-server --force;
+      else
+        echo "Deploy skipped because this is not the 'develop' branch.";
+      fi # Decode and create kubeconfig file and delete pod
+    - if [[ "$CI_COMMIT_REF_NAME" == "uat" ]]; then
+        echo "$PROD_ENT_KUBE_CONFIG" | base64 -d > kubeconfig.yml; export KUBECONFIG=$(pwd)/kubeconfig.yml; kubectl config use-context prod-enterprise-cluster; kubectl delete pod -n notification-server-uat -l app=quantum-notification-sms-server-uat --force;
+      else
+        echo "Deploy skipped because this is not the 'uat' branch.";
+      fi # Decode and create kubeconfig file and delete pod
+    # - export KUBECONFIG=$(pwd)/kubeconfig.yml  # Set KUBECONFIG environment variable
+    # - kubectl config use-context prod-enterprise-cluster  # Set the desired context in your kubeconfig
+    - if [[ "$CI_COMMIT_REF_NAME" == "production" ]]; then
+        echo "$PROD_NOTIFICATION_KUBE_CONFIG" | base64 -d > kubeconfig.yml; export KUBECONFIG=$(pwd)/kubeconfig.yml; kubectl config use-context notif-server-clst-test; kubectl delete pod -n notification-server -l app=quantum-notification-sms-server --force;
+      else
+        echo "Deploy skipped because this is not the 'production' branch.";
+      fi
+    # - export KUBECONFIG=$(pwd)/kubeconfig.yml  # Set KUBECONFIG environment variable
+    # - kubectl config use-context notif-server-clst-test  # Set the desired context in your kubeconfig
+#    - if [[ "$CI_COMMIT_REF_NAME" == "develop" || "$CI_COMMIT_REF_NAME" == "uat" || "$CI_COMMIT_REF_NAME" == "production" ]]; then
+ #       kubectl delete pod -n notification-server -l app=quantum-notification-sms-server --force;
+ #     else
+ #       echo "Deploy skipped because this is not the 'specified' branch.";
+ #     fi
+
+  only:
+    - develop
+    - uat
+    - production
