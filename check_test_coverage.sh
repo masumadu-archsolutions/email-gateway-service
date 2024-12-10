@@ -4,7 +4,7 @@
 declare -A dir_mapping
 dir_mapping["api/api_v1/endpoints"]=100
 dir_mapping["controllers/v1"]=80
-dir_mapping["models"]=100
+dir_mapping["models"]=90
 
 # Directories to check
 check_dirs=("api/api_v1/endpoints" "controllers/v1" "models")

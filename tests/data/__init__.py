@@ -1,3 +1,3 @@
+from .test_account_test_data import AccountTestData
+from .test_email_data import EmailTestData
 from .test_message_type_data import MessageTypeTestData
-from .test_sender_id_data import SenderIdTestData
-from .test_sms_data import SmsTestData

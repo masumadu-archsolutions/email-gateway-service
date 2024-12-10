@@ -1,19 +1,18 @@
 import pytest
 
-from app.models import SmsBatchModel
+from app.models import BatchModel
 from tests.base_test_case import BaseTestCase, get_db_session
 
 
-class TestSmsBatchModel(BaseTestCase):
+class TestBatchModel(BaseTestCase):
     @pytest.mark.model
-    def test_sms_batch_model(self, test_app):
+    def test_batch_model(self, test_app):
         with get_db_session() as db_session:
-            result = db_session.query(SmsBatchModel).get(self.sms_batch_model.id)
+            result = db_session.query(BatchModel).get(self.batch_model.id)
         assert result
         assert hasattr(result, "id")
-        assert hasattr(result, "sms_id")
+        assert hasattr(result, "email_id")
         assert hasattr(result, "total_recipients")
-        assert hasattr(result, "status")
         assert hasattr(result, "status")
         assert hasattr(result, "created_at")
         assert hasattr(result, "created_by")

@@ -6,27 +6,27 @@ from fastapi.testclient import TestClient
 
 from app import constants
 from app.controllers.v1 import (
+    AccountController,
+    BatchController,
+    EmailController,
     MessageTypeController,
-    SenderIdController,
-    SmsBatchController,
-    SmsController,
 )
 from app.core.database import Base, engine, get_db_session
 from app.models import (
+    AccountModel,
+    BatchModel,
+    EmailModel,
     MessageTypeModel,
     RecipientModel,
-    SenderIdModel,
-    SmsBatchModel,
-    SmsModel,
 )
 from app.repositories import (
+    AccountRepository,
+    BatchRepository,
+    EmailRepository,
     MessageTypeRepository,
     RecipientRepository,
-    SenderIdRepository,
-    SmsBatchRepository,
-    SmsRepository,
 )
-from tests.data import MessageTypeTestData, SenderIdTestData, SmsTestData
+from tests.data import AccountTestData, EmailTestData, MessageTypeTestData
 from tests.utils import MockSideEffects
 
 
@@ -49,25 +49,23 @@ class BaseTestCase(MockSideEffects):
 
     def setup_test_data(self):
         Base.metadata.create_all(bind=engine)
-        self.sms_test_data = SmsTestData()
-        self.sms_model = SmsModel(**self.sms_test_data.existing_sms)
-        self.commit_data_model(self.sms_model)
-        self.sms_batch_model = SmsBatchModel(**self.sms_test_data.existing_sms_task)
-        self.commit_data_model(self.sms_batch_model)
-        self.sms_recipient_model = RecipientModel(
-            **self.sms_test_data.existing_sms_recipient
-        )
-        self.commit_data_model(self.sms_recipient_model)
+        self.email_test_data = EmailTestData()
         self.message_type_test_data = MessageTypeTestData()
+        self.account_test_data = AccountTestData()
+        self.email_model = EmailModel(**self.email_test_data.existing_email)
+        self.commit_data_model(self.email_model)
         self.message_type_model = MessageTypeModel(
             **self.message_type_test_data.existing_type
         )
         self.commit_data_model(self.message_type_model)
-        self.sender_id_test_data = SenderIdTestData()
-        self.sender_id_model = SenderIdModel(
-            **self.sender_id_test_data.existing_sender_id
+        self.batch_model = BatchModel(**self.email_test_data.existing_email_batch)
+        self.commit_data_model(self.batch_model)
+        self.email_recipient_model = RecipientModel(
+            **self.email_test_data.existing_email_recipient
         )
-        self.commit_data_model(self.sender_id_model)
+        self.commit_data_model(self.email_recipient_model)
+        self.account_model = AccountModel(**self.account_test_data.existing_account)
+        self.commit_data_model(self.account_model)
 
     def commit_data_model(self, model):
         with get_db_session() as db_session:
@@ -76,29 +74,29 @@ class BaseTestCase(MockSideEffects):
             db_session.refresh(model)
 
     def instantiate_classes(self, redis_instance):
-        self.sms_repository = SmsRepository()
-        self.sms_batch_repository = SmsBatchRepository()
-        self.recipient_repository = RecipientRepository()
         self.message_type_repository = MessageTypeRepository()
-        self.sender_id_repository = SenderIdRepository()
         self.message_type_controller = MessageTypeController(
             message_type_repository=self.message_type_repository,
             redis_service=redis_instance,
         )
-        self.sender_id_controller = SenderIdController(
-            sender_id_repository=self.sender_id_repository, redis_service=redis_instance
+        self.email_repository = EmailRepository()
+        self.batch_repository = BatchRepository()
+        self.recipient_repository = RecipientRepository()
+        self.account_repository = AccountRepository()
+        self.account_controller = AccountController(
+            account_repository=self.account_repository
         )
-        self.sms_batch_controller = SmsBatchController(
-            sms_repository=self.sms_repository,
-            sms_batch_repository=self.sms_batch_repository,
+        self.batch_controller = BatchController(
+            email_repository=self.email_repository,
+            batch_repository=self.batch_repository,
         )
-        self.sms_controller = SmsController(
-            sms_repository=self.sms_repository,
-            sms_batch_repository=self.sms_batch_repository,
+        self.email_controller = EmailController(
+            email_repository=self.email_repository,
+            batch_repository=self.batch_repository,
             recipient_repository=self.recipient_repository,
-            sender_id_repository=self.sender_id_repository,
             message_type_repository=self.message_type_repository,
-            sms_batch_controller=self.sms_batch_controller,
+            batch_controller=self.batch_controller,
+            account_repository=self.account_repository,
             redis_service=redis_instance,
         )
 
@@ -109,8 +107,8 @@ class BaseTestCase(MockSideEffects):
         )
         self.jwt_decode = mocker.patch(
             "quantum_notify_auth.util.jwt.decode",
-            return_value=self.mock_decode_token(str(self.sms_model.user_id)),
+            return_value=self.mock_decode_token(str(self.message_type_model.user_id)),
         )
         mocker.patch("app.core.log.MailHandler.send_mail")
-        mocker.patch("app.controllers.v1.sms_controller.publish_to_kafka")
-        mocker.patch("app.controllers.v1.sms_batch_controller.publish_to_kafka")
+        mocker.patch("app.controllers.v1.email_controller.publish_to_kafka")
+        mocker.patch("app.controllers.v1.batch_controller.publish_to_kafka")
