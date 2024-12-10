@@ -115,13 +115,14 @@ class EmailController:
         self, obj_data: dict, email: EmailModel, auth_user: dict
     ):
         recipients = obj_data.get("recipients")
-        kafka_topic = f"{KAFKA_TOPIC_PREFIX}_{obj_data.get('trade_name')}_{obj_data.get('type')}_request".upper()  # noqa
+        kafka_topic = f"{obj_data.get('trade_name')}_{KAFKA_TOPIC_PREFIX}_{obj_data.get('type')}_request".upper()  # noqa
         for batch in load_in_batches(data=recipients, size=EMAIL_REQUEST_SIZE):
             publish_to_kafka(
                 kafka_topic,
                 {
                     "email_id": str(email.id),
-                    "sender": email.sender,
+                    "sender": email.sender_address,
+                    "name": obj_data.get("name"),
                     "recipients": batch,
                     "message": obj_data.get("html_body"),
                     "type": email.type,

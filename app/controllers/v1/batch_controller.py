@@ -18,7 +18,7 @@ class BatchController:
     def create_email_batch(self, obj_data: dict):
         recipients = obj_data.get("recipients")
         user_id = obj_data.get("user_id")
-        kafka_topic = f"{KAFKA_TOPIC_PREFIX}_{obj_data.get('trade_name')}_{obj_data.get('type')}_batch".upper()  # noqa
+        kafka_topic = f"{obj_data.get('trade_name')}_{KAFKA_TOPIC_PREFIX}_{obj_data.get('type')}_batch".upper()  # noqa
         for batch in load_in_batches(data=recipients, size=EMAIL_BATCH_SIZE):
             result = self.batch_repository.create(
                 obj_in={
