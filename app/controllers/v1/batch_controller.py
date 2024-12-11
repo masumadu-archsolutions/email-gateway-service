@@ -1,4 +1,5 @@
 from app.constants import EMAIL_BATCH_SIZE, KAFKA_TOPIC_PREFIX
+from app.core.exceptions import AppException
 from app.models import RecipientModel
 from app.producer import publish_to_kafka
 from app.repositories import BatchRepository, EmailRepository
@@ -33,26 +34,60 @@ class BatchController:
                 recipients=batch,
                 user_id=user_id,
             )
-            publish_to_kafka(
-                kafka_topic,
-                {
-                    "email_id": obj_data.get("email_id"),
-                    "sender": obj_data.get("sender"),
-                    "recipients": batch,
-                    "message": obj_data.get("message"),
-                    "type": obj_data.get("type"),
-                    "priority": obj_data.get("priority"),
-                    "webhook_url": obj_data.get("webhook_url"),
-                    "user_id": user_id,
-                    "batch_id": str(result.id),
-                    "topic": kafka_topic,
-                    "queue": obj_data.get("queue"),
-                },
+            self.publish_to_queue(
+                obj_data=obj_data,
+                recipients=batch,
+                user_id=user_id,
+                batch_id=str(result.id),
             )
             self.batch_repository.update_by_id(
                 obj_id=result.id, obj_in={"status": "successful"}
             )
             self.email_repository.update_by_id(
                 obj_id=obj_data.get("email_id"), obj_in={"status": "successful"}
+            )
+        return None
+
+    # noinspection PyMethodMayBeStatic
+    def publish_to_queue(
+        self, obj_data: dict, recipients: list, user_id: str, batch_id: str
+    ):
+        from app.tasks import publish_to_rabbitmq
+
+        try:
+            publish_to_rabbitmq(
+                queue=obj_data.get("queue"),
+                email_data={
+                    "email_id": obj_data.get("email_id"),
+                    "sender": obj_data.get("sender"),
+                    "name": obj_data.get("name"),
+                    "password": obj_data.get("password"),
+                    "recipients": recipients,
+                    "message": obj_data.get("message"),
+                    "type": obj_data.get("type"),
+                    "priority": obj_data.get("priority"),
+                    "webhook_url": obj_data.get("webhook_url"),
+                    "user_id": user_id,
+                    "batch_id": batch_id,
+                    "queue": obj_data.get("queue"),
+                },
+            )
+        except AppException.InternalServerException:
+            publish_to_kafka(
+                topic=obj_data.get("topic"),
+                value={
+                    "email_id": obj_data.get("email_id"),
+                    "sender": obj_data.get("sender"),
+                    "name": obj_data.get("name"),
+                    "password": obj_data.get("password"),
+                    "recipients": recipients,
+                    "message": obj_data.get("html_body"),
+                    "type": obj_data.get("type"),
+                    "priority": obj_data.get("priority"),
+                    "webhook_url": obj_data.get("webhook_url"),
+                    "user_id": user_id,
+                    "topic": obj_data.get("topic"),
+                    "queue": obj_data.get("queue"),
+                },
             )
         return None

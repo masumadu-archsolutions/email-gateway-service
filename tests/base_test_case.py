@@ -112,3 +112,4 @@ class BaseTestCase(MockSideEffects):
         mocker.patch("app.core.log.MailHandler.send_mail")
         mocker.patch("app.controllers.v1.email_controller.publish_to_kafka")
         mocker.patch("app.controllers.v1.batch_controller.publish_to_kafka")
+        mocker.patch("app.tasks.email_task.celery")

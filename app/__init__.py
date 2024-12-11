@@ -11,6 +11,7 @@ from sqlalchemy.exc import DBAPIError
 from app import api
 from app.core.database import get_db_session
 from app.core.exceptions import AppException, AppExceptionCase, app_exception_handler
+from app.core.extensions import celery
 from app.core.log import log_config
 from app.services import RedisService
 from config import settings
@@ -82,3 +83,12 @@ def register_event(app):
         pass
 
     return None
+
+
+def init_celery():
+    class ContextTask(celery.Task):
+        def __call__(self, *args, **kwargs):
+            return self.run(*args, **kwargs)
+
+    celery.Task = ContextTask
+    return celery

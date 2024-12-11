@@ -52,6 +52,9 @@ class EmailController:
         obj_data["trade_name"], obj_data["queue"] = self.message_queue(
             auth_user=auth_user, message_type=obj_data.get("type")
         )
+        obj_data[
+            "topic"
+        ] = f"{obj_data.get('trade_name')}_{KAFKA_TOPIC_PREFIX}_{obj_data.get('type')}_request".upper()  # noqa
         mail = self.create_email_record(user_id=user_id, obj_data=obj_data)
         if mail.total_recipients > EMAIL_BATCH_SIZE:
             self.create_email_request_task(
@@ -115,21 +118,21 @@ class EmailController:
         self, obj_data: dict, email: EmailModel, auth_user: dict
     ):
         recipients = obj_data.get("recipients")
-        kafka_topic = f"{obj_data.get('trade_name')}_{KAFKA_TOPIC_PREFIX}_{obj_data.get('type')}_request".upper()  # noqa
         for batch in load_in_batches(data=recipients, size=EMAIL_REQUEST_SIZE):
             publish_to_kafka(
-                kafka_topic,
+                obj_data.get("topic"),
                 {
                     "email_id": str(email.id),
                     "sender": email.sender_address,
                     "name": obj_data.get("name"),
+                    "password": obj_data.get("password"),
                     "recipients": batch,
                     "message": obj_data.get("html_body"),
                     "type": email.type,
                     "priority": obj_data.get("priority"),
                     "webhook_url": obj_data.get("webhook_url"),
                     "user_id": auth_user.get("id"),
-                    "topic": kafka_topic,
+                    "topic": obj_data.get("topic"),
                     "queue": obj_data.get("queue"),
                 },
             )

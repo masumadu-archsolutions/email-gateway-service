@@ -19,6 +19,8 @@ class BaseConfig(BaseSettings):
     db_uri: str = ""
     # redis config
     redis_uri: str = ""
+    # rabbitmq config
+    rmq_uri: str = ""
     # reminder: mail server config
     mail_server: str = ""
     mail_server_port: str = ""
