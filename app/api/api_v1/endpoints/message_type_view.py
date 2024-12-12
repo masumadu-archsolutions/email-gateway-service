@@ -4,6 +4,7 @@ import pinject
 from fastapi import APIRouter, Depends, Request, status
 from fastapi_pagination import Page, Params
 from quantum_notify_auth import AuthorizeRequest
+from quantum_notify_auth.util import AccountRoleEnum, AccountTypeEnum
 
 from app.controllers.v1 import MessageTypeController
 from app.repositories import MessageTypeRepository
@@ -68,7 +69,14 @@ def delete_message_type(message_type_id: uuid.UUID, request: Request):
     "/{message_type_id}/activate",
     response_model=MessageTypeSchema,
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(AuthorizeRequest())],
+    dependencies=[
+        Depends(
+            AuthorizeRequest(
+                allowed_roles=[AccountRoleEnum.super_admin.value],
+                allowed_accounts=[AccountTypeEnum.admin.value],
+            )
+        )
+    ],
 )
 def activate_message_type(message_type_id: uuid.UUID, request: Request):
     return message_type_controller.activate_message_type(  # noqa

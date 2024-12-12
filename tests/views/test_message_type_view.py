@@ -1,6 +1,7 @@
 from unittest import mock
 
 import pytest
+from quantum_notify_auth.util import AccountRoleEnum, AccountTypeEnum
 
 from app.api.api_v1.endpoints import message_type_base_url
 from tests.base_test_case import BaseTestCase
@@ -53,7 +54,9 @@ class TestMessageTypeView(BaseTestCase):
     def test_activate_type(self, mock_service_request, test_app):
         with test_app as test_client:
             mock_service_request.return_value = self.user_service_find_user(
-                user_id=str(self.message_type_model.user_id)
+                user_id=str(self.message_type_model.user_id),
+                role=AccountRoleEnum.super_admin.value,
+                type=AccountTypeEnum.admin.value,
             )
             response = test_client.patch(
                 f"{message_type_base_url}/{self.message_type_model.id}/activate",

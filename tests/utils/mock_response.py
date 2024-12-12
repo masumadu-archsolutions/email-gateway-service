@@ -35,7 +35,7 @@ class MockSideEffects:
                 "is_phone_verified": True,
                 "api_key_enabled": True,
                 "last_active": "2023-08-31T12:14:37.325Z",
-                "type": "business",
+                "type": kwargs.get("type") or "business",
                 "comment": {},
                 "status": "inactive",
                 "created_at": "2023-08-31T12:14:37.325Z",
