@@ -4,16 +4,28 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 
 from app.core.exceptions import AppException
 from config import settings
 
-engine = create_engine(
-    settings.SQLALCHEMY_DATABASE_URI,
-    pool_size=15,
-    max_overflow=5,
-    pool_pre_ping=True,
-)
+connect_args = {
+    "sslmode": "require" if settings.db_ssl else "prefer",
+    "application_name": settings.app_name,
+}
+
+if settings.db_connection_pool:
+    engine = create_engine(
+        settings.SQLALCHEMY_DATABASE_URI,
+        pool_size=15,
+        max_overflow=5,
+        pool_pre_ping=True,
+        connect_args=connect_args,
+    )
+else:
+    engine = create_engine(
+        settings.SQLALCHEMY_DATABASE_URI, poolclass=NullPool, connect_args=connect_args
+    )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

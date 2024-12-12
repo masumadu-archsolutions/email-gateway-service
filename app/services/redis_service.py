@@ -6,7 +6,13 @@ from app.core.exceptions import HTTPException, exception_message
 from app.core.service_interfaces import CacheServiceInterface
 from config import settings
 
-redis_conn = redis.from_url(url=settings.redis_uri, decode_responses=True)
+redis_conn = redis.Redis(
+    host=settings.redis_server,
+    port=settings.redis_port,
+    db=0,
+    password=f"{settings.redis_password}",
+    decode_responses=True,
+)
 
 
 class RedisService(CacheServiceInterface):

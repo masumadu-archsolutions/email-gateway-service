@@ -99,7 +99,7 @@ def log_config():
                 "level": "CRITICAL",
                 "mailhost": (settings.mail_server, settings.mail_server_port),
                 "fromaddr": f"{settings.default_mail_sender} <{settings.default_mail_sender_address}>",  # noqa
-                "toaddrs": settings.admin_mail_address.split("|"),
+                "toaddrs": settings.maintainer_mail_address.split("|"),
                 "subject": f"{settings.log_header}[{settings.app_env}_{datetime.utcnow().date()}]",  # noqa
                 "credentials": (
                     settings.default_mail_sender_address,

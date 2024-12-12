@@ -3,7 +3,7 @@ import json
 from fastapi_pagination import Params
 from fastapi_pagination.ext.sqlalchemy import paginate
 
-from app.constants import APP_PREFIX, EMAIL_BATCH_SIZE, EMAIL_REQUEST_SIZE
+from app.constants import EMAIL_BATCH_SIZE, EMAIL_REQUEST_SIZE
 from app.core.exceptions import AppException, HTTPException
 from app.models import EmailModel
 from app.producer import publish_to_kafka
@@ -17,6 +17,7 @@ from app.repositories import (
 from app.schema.v1 import MessageTypeSchema
 from app.services import RedisService
 from app.utils import load_in_batches, remove_none_fields
+from config import settings
 
 from .batch_controller import BatchController
 
@@ -54,7 +55,7 @@ class EmailController:
         )
         obj_data[
             "topic"
-        ] = f"{obj_data.get('trade_name')}_{obj_data.get('type')}_{APP_PREFIX}_request".upper()  # noqa
+        ] = f"{obj_data.get('trade_name')}_{obj_data.get('type')}_{settings.app_alias}_request".upper()  # noqa
         mail = self.create_email_record(user_id=user_id, obj_data=obj_data)
         if mail.total_recipients > EMAIL_BATCH_SIZE:
             self.create_email_request_task(
@@ -125,6 +126,7 @@ class EmailController:
                     "email_id": str(email.id),
                     "sender": email.sender_address,
                     "name": obj_data.get("name"),
+                    "subject": obj_data.get("subject"),
                     "password": obj_data.get("password"),
                     "recipients": batch,
                     "html": obj_data.get("html_body"),
@@ -148,7 +150,7 @@ class EmailController:
             trade_name = auth_user.get("profile").get("trade_name")
         else:
             trade_name = auth_user.get("profile").get("trade_name")
-        return trade_name, f"{trade_name}_{message_type}_{APP_PREFIX}".lower()
+        return trade_name, f"{trade_name}_{message_type}_{settings.app_alias}".lower()
 
     def get_all_email(
         self, auth_user: dict, page_params: Params, query_params: dict

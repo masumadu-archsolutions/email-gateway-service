@@ -20,7 +20,7 @@ if __name__ == "__main__":
         consumer = KafkaConsumer(
             bootstrap_servers=settings.kafka_bootstrap_servers.split("|"),
             auto_offset_reset="earliest",
-            group_id=settings.kafka_consumer_group,
+            group_id=f"{settings.kafka_consumer_group}_REQUEST",
             security_protocol="SASL_PLAINTEXT",
             sasl_mechanism="SCRAM-SHA-256",
             sasl_plain_username=settings.kafka_server_username,
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     except KafkaError as exc:
         loguru_logger.error(f"KafkaError({exc}) occurred while connecting")
     else:
-        subscriptions = settings.kafka_subscriptions.split("|")
+        subscriptions = f"{settings.kafka_subscription}_REQUEST".split("|")
         consumer.subscribe(subscriptions)
         loguru_logger.info(f"Topic Subscription List: {subscriptions}")
         loguru_logger.info("AWAITING MESSAGES\n")
