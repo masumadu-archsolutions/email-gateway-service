@@ -15,7 +15,7 @@ WORKDIR /install
 
 COPY requirements.txt /requirements.txt
 
-RUN git clone https://$username:$token@gitlab.quantumgroupgh.com/$username/quantum-notification-auth.git .
+RUN git clone https://$username:$token@github.com/Blueray-Automation/quantum-notification-auth.git .
 
 RUN pip install --prefix=/install .
 
