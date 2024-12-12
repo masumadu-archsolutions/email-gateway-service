@@ -59,7 +59,7 @@ if __name__ == "__main__":
             try:
                 batch_controller.create_email_batch(obj_data=data)
                 loguru_logger.info(
-                    f"EmailRequest[{settings.app_name}({settings.app_env}) | Email{sms_id, total} | successful]\n"  # noqa
+                    f"EmailRequest[{settings.app_name}({settings.app_env}) | Email{email_id, total} | successful]\n"  # noqa
                 )
             except AppExceptionCase:
                 loguru_logger.info(

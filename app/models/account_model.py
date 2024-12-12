@@ -28,18 +28,16 @@ class AccountModel(Base, BaseModel):
     @password.setter
     def password(self, value):
         # reminder: generate a key for encrypting password
-        key = AccountModel.generate_key_from_string(
-            salt=self.mail_address, passphrase=self.mail_address
-        )
+        key = AccountModel.generate_key_from_string(passphrase=self.mail_address)
         # reminder: encrypt password
         self._password = AccountModel.encrypt_text(key=key, text=value)
 
     # noinspection PyMethodMayBeStatic
     @staticmethod
-    def generate_key_from_string(salt, passphrase):
+    def generate_key_from_string(passphrase):
         # reminder: generate a passphrase and salt for encryption key
+        salt = passphrase.encode("utf-8").upper()
         passphrase = passphrase.encode("utf-8").lower()
-        salt = salt.encode("utf-8").upper()
         # reminder: derive the key using PBKDF2
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
@@ -58,13 +56,3 @@ class AccountModel(Base, BaseModel):
         cipher_suite = Fernet(key)
         raw_encryption = cipher_suite.encrypt(text.encode("utf-8"))
         return base64.urlsafe_b64encode(raw_encryption).decode("utf-8")
-
-    @staticmethod
-    def decrypt_text(passphrase: str, encrypted_text: str):
-        # reminder: generate key for decrypting text
-        key = AccountModel.generate_key_from_string(
-            salt=passphrase, passphrase=passphrase
-        )
-        cipher_suite = Fernet(key)
-        convert_to_byte = base64.urlsafe_b64decode(encrypted_text.encode("utf-8"))
-        return cipher_suite.decrypt(convert_to_byte).decode("utf-8")

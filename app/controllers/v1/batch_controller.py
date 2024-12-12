@@ -1,6 +1,6 @@
-from app.constants import EMAIL_BATCH_SIZE, KAFKA_TOPIC_PREFIX
+from app.constants import EMAIL_BATCH_SIZE
 from app.core.exceptions import AppException
-from app.models import RecipientModel
+from app.models import AccountModel, RecipientModel
 from app.producer import publish_to_kafka
 from app.repositories import BatchRepository, EmailRepository
 from app.utils import load_in_batches
@@ -19,7 +19,6 @@ class BatchController:
     def create_email_batch(self, obj_data: dict):
         recipients = obj_data.get("recipients")
         user_id = obj_data.get("user_id")
-        kafka_topic = f"{obj_data.get('trade_name')}_{KAFKA_TOPIC_PREFIX}_{obj_data.get('type')}_batch".upper()  # noqa
         for batch in load_in_batches(data=recipients, size=EMAIL_BATCH_SIZE):
             result = self.batch_repository.create(
                 obj_in={
@@ -61,9 +60,14 @@ class BatchController:
                     "email_id": obj_data.get("email_id"),
                     "sender": obj_data.get("sender"),
                     "name": obj_data.get("name"),
+                    "subject": obj_data.get("subject"),
                     "password": obj_data.get("password"),
+                    "key": AccountModel.generate_key_from_string(
+                        passphrase=obj_data.get("sender")
+                    ),
                     "recipients": recipients,
-                    "message": obj_data.get("message"),
+                    "html": obj_data.get("html_body"),
+                    "text": obj_data.get("text_body"),
                     "type": obj_data.get("type"),
                     "priority": obj_data.get("priority"),
                     "webhook_url": obj_data.get("webhook_url"),
@@ -79,9 +83,11 @@ class BatchController:
                     "email_id": obj_data.get("email_id"),
                     "sender": obj_data.get("sender"),
                     "name": obj_data.get("name"),
+                    "subject": obj_data.get("subject"),
                     "password": obj_data.get("password"),
                     "recipients": recipients,
-                    "message": obj_data.get("html_body"),
+                    "html": obj_data.get("html_body"),
+                    "text": obj_data.get("text_body"),
                     "type": obj_data.get("type"),
                     "priority": obj_data.get("priority"),
                     "webhook_url": obj_data.get("webhook_url"),
