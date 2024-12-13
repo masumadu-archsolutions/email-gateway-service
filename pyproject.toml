@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "nova-fastapi-microservice"
+name = "email-gateway-service"
 version = "0.1.0"
-description = "design template for building microservice using fastapi"
+description = "microservice that interfaces with client for email notification requests"
 authors = ["Michael Asumadu <masumadu@archsolutions.online>"]
 readme = "README.md"
-packages = [{include = "nova_fastapi_microservice"}]
+packages = [{include = "email_gateway_service"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"

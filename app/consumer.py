@@ -14,13 +14,15 @@ from app import create_app  # noqa: E402
 from app.core.exceptions import AppExceptionCase  # noqa: E402
 from config import settings  # noqa: E402
 
+KAFKA_MESSAGE_ID = f"{settings.kafka_subscription}_{settings.app_alias}_request".upper()
+
 if __name__ == "__main__":
     loguru_logger.info("CONNECTING TO KAFKA SERVER")
     try:
         consumer = KafkaConsumer(
             bootstrap_servers=settings.kafka_bootstrap_servers.split("|"),
             auto_offset_reset="earliest",
-            group_id=f"{settings.kafka_consumer_group}_REQUEST",
+            group_id=KAFKA_MESSAGE_ID,
             security_protocol="SASL_PLAINTEXT",
             sasl_mechanism="SCRAM-SHA-256",
             sasl_plain_username=settings.kafka_server_username,
@@ -30,7 +32,7 @@ if __name__ == "__main__":
     except KafkaError as exc:
         loguru_logger.error(f"KafkaError({exc}) occurred while connecting")
     else:
-        subscriptions = f"{settings.kafka_subscription}_REQUEST".split("|")
+        subscriptions = KAFKA_MESSAGE_ID.split("|")
         consumer.subscribe(subscriptions)
         loguru_logger.info(f"Topic Subscription List: {subscriptions}")
         loguru_logger.info("AWAITING MESSAGES\n")

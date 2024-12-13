@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Union
+from typing import Literal, Union
 
 from fastapi import Query
 from pydantic import BaseModel
@@ -13,6 +13,7 @@ class MessageTypeSchema(BaseModel):
     user_id: uuid.UUID
     type: str
     priority: str
+    delivery_mode: str
     description: Union[str, None]
     is_active: bool
     created_at: datetime
@@ -30,6 +31,7 @@ class MessageTypeSchema(BaseModel):
 class AddNMessageTypeSchema(BaseModel):
     type: str
     priority: MessageTypePriority
+    delivery_mode: Literal["direct", "broadcast"]
     description: str = None
 
     class Config:

@@ -53,7 +53,6 @@ class BaseConfig(BaseSettings):
     kafka_server_username: str = ""
     kafka_server_password: str = ""
     kafka_subscription: str = ""
-    kafka_consumer_group: str = ""
 
     @property
     def SQLALCHEMY_DATABASE_URI(self):  # noqa

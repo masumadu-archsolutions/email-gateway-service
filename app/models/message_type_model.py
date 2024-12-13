@@ -13,6 +13,7 @@ class MessageTypeModel(Base, BaseModel):
     id = sa.Column(sa.UUID, primary_key=True, default=uuid.uuid4)
     user_id = sa.Column(sa.UUID, nullable=False, index=True)
     type = sa.Column(sa.String, nullable=False, unique=True)
+    delivery_mode = sa.Column(sa.String, nullable=False, server_default="direct")
     priority = sa.Column(
         sa.String,
         nullable=False,
