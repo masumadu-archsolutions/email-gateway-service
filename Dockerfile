@@ -8,6 +8,7 @@ RUN apt-get install -y git
 
 ARG username=username
 ARG token=token
+ARG repo=repo
 
 RUN mkdir /install
 
@@ -15,7 +16,7 @@ WORKDIR /install
 
 COPY requirements.txt /requirements.txt
 
-RUN git clone https://$username:$token@github.com/Blueray-Automation/quantum-notification-auth.git .
+RUN git clone https://$username:$token@$repo .
 
 RUN pip install --prefix=/install .
 
